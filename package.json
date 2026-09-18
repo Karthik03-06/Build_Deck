@@ -1,0 +1,28 @@
+{
+  "name": "builddeck",
+  "version": "1.0.0",
+  "description": "BuildDeck - GitHub-Integrated Pull Request Preview and Debugging Platform",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix server start",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "test": "npm --prefix server test",
+    "build:client": "npm --prefix client run build",
+    "seed": "npm --prefix server run seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "keywords": [
+    "pull-request",
+    "docker",
+    "preview-environments",
+    "ci-cd",
+    "traefik",
+    "debug",
+    "reproduction"
+  ],
+  "author": "BuildDeck Team",
+  "license": "MIT"
+}

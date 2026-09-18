@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  githubId             String       @unique
+  username             String
+  displayName          String?
+  email                String?
+  avatarUrl            String?
+  accessTokenEncrypted String?      @db.Text
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  repositories         Repository[]
+  issues               Issue[]
+
+  @@map("users")
+}
+
+model Repository {
+  id                 String          @id @default(cuid())
+  githubRepositoryId String
+  name               String
+  fullName           String          @unique
+  owner              String
+  defaultBranch      String          @default("main")
+  cloneUrl           String
+  htmlUrl            String
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  pullRequests       PullRequest[]
+  activityEvents     ActivityEvent[]
+
+  @@index([userId])
+  @@map("repositories")
+}
+
+model PullRequest {
+  id                 String               @id @default(cuid())
+  githubPrId         String
+  number             Int
+  title              String
+  description        String?              @db.Text
+  sourceBranch       String
+  targetBranch       String
+  commitSha          String
+  state              String               @default("OPEN") // OPEN, CLOSED, MERGED
+  author             String
+  repositoryId       String
+  repository         Repository           @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  previewEnvironments PreviewEnvironment[]
+  issues             Issue[]
+  activityEvents     ActivityEvent[]
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId])
+  @@index([commitSha])
+  @@map("pull_requests")
+}
+
+model PreviewEnvironment {
+  id            String           @id @default(cuid())
+  pullRequestId String
+  pullRequest   PullRequest      @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  commitSha     String
+  containerId   String?
+  imageId       String?
+  previewUrl    String?
+  status        String           @default("QUEUED") // QUEUED, BUILDING, STARTING, RUNNING, FAILED, STOPPING, DESTROYED
+  containerPort Int              @default(3000)
+  createdAt     DateTime         @default(now())
+  startedAt     DateTime?
+  destroyedAt   DateTime?
+  updatedAt     DateTime         @updatedAt
+
+  logs          EnvironmentLog[]
+  issueContexts IssueContext[]
+  jobs          EnvironmentJob[]
+  activityEvents ActivityEvent[]
+
+  @@index([pullRequestId])
+  @@index([commitSha])
+  @@index([status])
+  @@map("preview_environments")
+}
+
+model EnvironmentLog {
+  id            String             @id @default(cuid())
+  environmentId String
+  environment   PreviewEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  level         String             @default("INFO") // INFO, WARN, ERROR
+  message       String             @db.Text
+  source        String             @default("docker") // docker, build, health, system
+  timestamp     DateTime           @default(now())
+
+  @@index([environmentId])
+  @@index([timestamp])
+  @@map("environment_logs")
+}
+
+model Issue {
+  id               String        @id @default(cuid())
+  pullRequestId    String
+  pullRequest      PullRequest   @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  title            String
+  description      String        @db.Text
+  stepsToReproduce String?       @db.Text
+  expectedBehavior String?       @db.Text
+  actualBehavior   String?       @db.Text
+  severity         String        @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status           String        @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  createdBy        String
+  userId           String?
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  context          IssueContext?
+
+  @@index([pullRequestId])
+  @@index([status])
+  @@map("issues")
+}
+
+model IssueContext {
+  id                String              @id @default(cuid())
+  issueId           String              @unique
+  issue             Issue               @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  environmentId     String?
+  environment       PreviewEnvironment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  commitSha         String
+  containerId       String?
+  timestamp         DateTime            @default(now())
+  browserInfo       String              @db.Text // JSON string
+  userAgent         String              @db.Text
+  currentUrl        String
+  relevantLogs      String              @db.Text // JSON string
+  apiActivity       String              @db.Text // JSON string
+  environmentStatus String
+
+  @@index([commitSha])
+  @@map("issue_contexts")
+}
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  deliveryId String   @unique
+  eventType  String
+  action     String?
+  payload    String   @db.Text
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([deliveryId])
+  @@map("webhook_events")
+}
+
+model EnvironmentJob {
+  id            String             @id @default(cuid())
+  environmentId String
+  environment   PreviewEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  type          String             // BUILD_AND_START, STOP_AND_DESTROY, REBUILD
+  status        String             @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  attempts      Int                @default(0)
+  error         String?            @db.Text
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([environmentId])
+  @@index([status])
+  @@map("environment_jobs")
+}
+
+model ActivityEvent {
+  id            String              @id @default(cuid())
+  repositoryId  String?
+  repository    Repository?         @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  pullRequestId String?
+  pullRequest   PullRequest?        @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  environmentId String?
+  environment   PreviewEnvironment? @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  type          String              // pr_opened, preview_queued, build_started, build_completed, container_started, preview_ready, issue_reported, etc.
+  message       String
+  metadata      String?             @db.Text // JSON string
+  createdAt     DateTime            @default(now())
+
+  @@index([repositoryId])
+  @@index([pullRequestId])
+  @@index([environmentId])
+  @@index([createdAt])
+  @@map("activity_events")
+}

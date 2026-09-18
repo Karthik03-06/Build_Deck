@@ -1,0 +1,12 @@
+{
+  "name": "builddeck-sample-app",
+  "version": "1.0.0",
+  "description": "Sample application for BuildDeck Pull Request preview environments",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -62,6 +62,9 @@ export default function LandingPage() {
               <Layers className="w-5 h-5 text-white" />
             </div>
             <span className="text-lg font-bold text-white tracking-tight">BuildDeck</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              v1.0 Demo
+            </span>
           </div>
           <div className="flex items-center gap-4">
             {user ? (
@@ -96,6 +99,9 @@ export default function LandingPage() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono bg-brand-500/10 text-brand-400 border border-brand-500/30">
           <Zap className="w-3.5 h-3.5" />
           <span>Real Docker Previews + Reproducible Debugging</span>
+          <span className="px-1.5 py-0.5 text-[10px] uppercase font-bold rounded bg-brand-500/20 text-brand-300 border border-brand-500/40">
+            Live PR Demo
+          </span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight">
